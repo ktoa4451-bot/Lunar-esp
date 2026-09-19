@@ -1,71 +1,96 @@
 --========================================
--- PART 1/3 - LUNAR ESP CORE / UI
+-- LUNAR ESP 3.0
+-- PART 1/3
 --========================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+--========================================
+-- SETTINGS
+--========================================
 
 local Settings = {
     Enabled = true,
 
     BoxESP = true,
+    ModelESP = false,
     NameESP = true,
     HealthESP = true,
     DistanceESP = true,
     TracerESP = false,
     SkeletonESP = false,
-    ModelESP = false,
 
     TeamCheck = true,
     Rainbow = false,
 
     MaxDistance = 1000,
 
-    ESPColor = Color3.fromRGB(175, 100, 255)
+    ESPColor = Color3.fromRGB(180, 100, 255)
 }
 
-local Colors = {
-    Background = Color3.fromRGB(17, 12, 24),
-    Panel = Color3.fromRGB(25, 18, 35),
+--========================================
+-- COLORS
+--========================================
 
-    Purple = Color3.fromRGB(175, 100, 255),
-    PurpleDark = Color3.fromRGB(100, 50, 155),
-
-    Text = Color3.fromRGB(235, 225, 245),
-    SubText = Color3.fromRGB(150, 135, 165),
-
-    Green = Color3.fromRGB(100, 255, 160),
-    Red = Color3.fromRGB(255, 80, 110),
-    White = Color3.fromRGB(255, 255, 255)
+local ESPColors = {
+    Color3.fromRGB(180, 100, 255),
+    Color3.fromRGB(120, 170, 255),
+    Color3.fromRGB(255, 100, 180),
+    Color3.fromRGB(100, 255, 180),
+    Color3.fromRGB(255, 190, 80),
+    Color3.fromRGB(255, 80, 80),
+    Color3.fromRGB(255, 255, 255)
 }
+
+local ColorNames = {
+    "Purple",
+    "Blue",
+    "Pink",
+    "Green",
+    "Orange",
+    "Red",
+    "White"
+}
+
+local ColorIndex = 1
 
 --========================================
 -- GUI PARENT
 --========================================
 
 local function GetGuiParent()
-    local Success, Hui = pcall(function()
-        return gethui()
-    end)
+    local Success, Result
 
-    if Success and Hui then
-        return Hui
+    if gethui then
+        Success, Result = pcall(gethui)
+
+        if Success and Result then
+            return Result
+        end
     end
 
-    local CoreGui = game:GetService("CoreGui")
+    Success, Result = pcall(function()
+        return game:GetService("CoreGui")
+    end)
 
-    if CoreGui then
-        return CoreGui
+    if Success and Result then
+        return Result
     end
 
     return LocalPlayer:WaitForChild("PlayerGui")
 end
 
 local GuiParent = GetGuiParent()
+
+--========================================
+-- REMOVE OLD GUI
+--========================================
 
 pcall(function()
     local Old = GuiParent:FindFirstChild("LunarESP")
@@ -80,12 +105,10 @@ end)
 --========================================
 
 local ScreenGui = Instance.new("ScreenGui")
-
 ScreenGui.Name = "LunarESP"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
 ScreenGui.Parent = GuiParent
 
 --========================================
@@ -93,581 +116,304 @@ ScreenGui.Parent = GuiParent
 --========================================
 
 local Main = Instance.new("Frame")
-
 Main.Name = "Main"
-Main.Size = UDim2.new(0, 340, 0, 520)
-Main.Position = UDim2.new(0.5, -170, 0.5, -260)
-
-Main.BackgroundColor3 = Colors.Background
+Main.Size = UDim2.fromOffset(350, 540)
+Main.Position = UDim2.new(0.5, -175, 0.5, -270)
+Main.BackgroundColor3 = Color3.fromRGB(17, 13, 23)
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
-
 Main.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-
-MainCorner.CornerRadius = UDim.new(0, 18)
+MainCorner.CornerRadius = UDim.new(0, 16)
 MainCorner.Parent = Main
 
 local MainStroke = Instance.new("UIStroke")
-
-MainStroke.Color = Colors.Purple
+MainStroke.Color = Settings.ESPColor
 MainStroke.Thickness = 1.5
-MainStroke.Transparency = 0.2
-
+MainStroke.Transparency = 0.15
 MainStroke.Parent = Main
-
---========================================
--- GLOW
---========================================
-
-local Glow = Instance.new("ImageLabel")
-
-Glow.Name = "Glow"
-
-Glow.AnchorPoint = Vector2.new(0.5, 0.5)
-Glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-
-Glow.Size = UDim2.new(1, 50, 1, 50)
-
-Glow.BackgroundTransparency = 1
-
-Glow.Image = "rbxassetid://5028857084"
-Glow.ImageColor3 = Colors.Purple
-Glow.ImageTransparency = 0.82
-
-Glow.ZIndex = 0
-Glow.Parent = Main
 
 --========================================
 -- TOP BAR
 --========================================
 
 local TopBar = Instance.new("Frame")
-
 TopBar.Name = "TopBar"
-
-TopBar.Size = UDim2.new(1, 0, 0, 68)
-
-TopBar.BackgroundTransparency = 1
-TopBar.ZIndex = 10
-
+TopBar.Size = UDim2.new(1, 0, 0, 70)
+TopBar.BackgroundColor3 = Color3.fromRGB(23, 17, 31)
+TopBar.BorderSizePixel = 0
 TopBar.Parent = Main
 
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 16)
+TopCorner.Parent = TopBar
+
 --========================================
--- MOON LOGO
+-- TOP BAR MASK
+--========================================
+
+local TopMask = Instance.new("Frame")
+TopMask.Size = UDim2.new(1, 0, 0, 18)
+TopMask.Position = UDim2.new(0, 0, 1, -18)
+TopMask.BackgroundColor3 = TopBar.BackgroundColor3
+TopMask.BorderSizePixel = 0
+TopMask.Parent = TopBar
+
+--========================================
+-- LOGO
 --========================================
 
 local LogoButton = Instance.new("TextButton")
-
 LogoButton.Name = "LogoButton"
-
-LogoButton.Size = UDim2.new(0, 44, 0, 44)
-LogoButton.Position = UDim2.new(0, 12, 0.5, -22)
-
-LogoButton.BackgroundTransparency = 1
-LogoButton.BorderSizePixel = 0
-
-LogoButton.Text = "🌙"
-LogoButton.TextSize = 30
-
+LogoButton.Size = UDim2.fromOffset(48, 48)
+LogoButton.Position = UDim2.fromOffset(11, 11)
+LogoButton.BackgroundColor3 = Color3.fromRGB(31, 22, 42)
+LogoButton.Text = "☾"
+LogoButton.TextColor3 = Settings.ESPColor
+LogoButton.TextSize = 29
 LogoButton.Font = Enum.Font.GothamBold
-
-LogoButton.TextColor3 =
-    Color3.fromRGB(190, 145, 255)
-
 LogoButton.AutoButtonColor = false
-LogoButton.ZIndex = 20
-
+LogoButton.BorderSizePixel = 0
 LogoButton.Parent = TopBar
+
+local LogoCorner = Instance.new("UICorner")
+LogoCorner.CornerRadius = UDim.new(0, 13)
+LogoCorner.Parent = LogoButton
 
 --========================================
 -- TITLE
 --========================================
 
 local Title = Instance.new("TextLabel")
-
 Title.Name = "Title"
-
-Title.Position = UDim2.new(0, 62, 0, 13)
-Title.Size = UDim2.new(1, -150, 0, 24)
-
+Title.Size = UDim2.new(1, -150, 0, 28)
+Title.Position = UDim2.fromOffset(70, 12)
 Title.BackgroundTransparency = 1
-
-Title.Text = "Lunar ESP"
-
-Title.TextColor3 = Colors.Text
-Title.TextSize = 18
-
+Title.Text = "LUNAR ESP"
+Title.TextColor3 = Color3.fromRGB(245, 240, 250)
+Title.TextSize = 20
 Title.Font = Enum.Font.GothamBold
-
-Title.TextXAlignment =
-    Enum.TextXAlignment.Left
-
-Title.ZIndex = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
---========================================
--- SUBTITLE
---========================================
-
 local Subtitle = Instance.new("TextLabel")
-
 Subtitle.Name = "Subtitle"
-
-Subtitle.Position = UDim2.new(0, 62, 0, 37)
-Subtitle.Size = UDim2.new(1, -150, 0, 18)
-
+Subtitle.Size = UDim2.new(1, -150, 0, 20)
+Subtitle.Position = UDim2.fromOffset(71, 39)
 Subtitle.BackgroundTransparency = 1
-
-Subtitle.Text = "Universal player visualization"
-
-Subtitle.TextColor3 = Colors.SubText
-Subtitle.TextSize = 10
-
+Subtitle.Text = "Visual Player System"
+Subtitle.TextColor3 = Color3.fromRGB(145, 130, 155)
+Subtitle.TextSize = 11
 Subtitle.Font = Enum.Font.Gotham
-
-Subtitle.TextXAlignment =
-    Enum.TextXAlignment.Left
-
-Subtitle.ZIndex = 20
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 Subtitle.Parent = TopBar
 
 --========================================
--- MINIMIZE
---========================================
-
-local MinimizeButton = Instance.new("TextButton")
-
-MinimizeButton.Name = "MinimizeButton"
-
-MinimizeButton.Size = UDim2.new(0, 34, 0, 34)
-MinimizeButton.Position = UDim2.new(1, -75, 0.5, -17)
-
-MinimizeButton.BackgroundTransparency = 1
-MinimizeButton.BorderSizePixel = 0
-
-MinimizeButton.Text = "—"
-MinimizeButton.TextColor3 =
-    Color3.fromRGB(200, 180, 220)
-
-MinimizeButton.TextSize = 22
-
-MinimizeButton.Font =
-    Enum.Font.GothamBold
-
-MinimizeButton.AutoButtonColor = false
-MinimizeButton.ZIndex = 20
-
-MinimizeButton.Parent = TopBar
-
---========================================
--- CLOSE
+-- CLOSE BUTTON
 --========================================
 
 local CloseButton = Instance.new("TextButton")
-
 CloseButton.Name = "CloseButton"
-
-CloseButton.Size = UDim2.new(0, 34, 0, 34)
-CloseButton.Position = UDim2.new(1, -40, 0.5, -17)
-
-CloseButton.BackgroundTransparency = 1
-CloseButton.BorderSizePixel = 0
-
+CloseButton.Size = UDim2.fromOffset(32, 32)
+CloseButton.Position = UDim2.new(1, -42, 0, 10)
+CloseButton.BackgroundColor3 = Color3.fromRGB(55, 27, 40)
 CloseButton.Text = "×"
-
-CloseButton.TextColor3 =
-    Color3.fromRGB(200, 180, 220)
-
-CloseButton.TextSize = 24
-
-CloseButton.Font =
-    Enum.Font.GothamBold
-
+CloseButton.TextColor3 = Color3.fromRGB(255, 120, 150)
+CloseButton.TextSize = 22
+CloseButton.Font = Enum.Font.GothamBold
 CloseButton.AutoButtonColor = false
-CloseButton.ZIndex = 20
-
+CloseButton.BorderSizePixel = 0
 CloseButton.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 10)
+CloseCorner.Parent = CloseButton
+
+--========================================
+-- MINIMIZE BUTTON
+--========================================
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.fromOffset(32, 32)
+MinimizeButton.Position = UDim2.new(1, -80, 0, 10)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(38, 29, 47)
+MinimizeButton.Text = "−"
+MinimizeButton.TextColor3 = Color3.fromRGB(210, 190, 225)
+MinimizeButton.TextSize = 20
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.AutoButtonColor = false
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Parent = TopBar
+
+local MinimizeCorner = Instance.new("UICorner")
+MinimizeCorner.CornerRadius = UDim.new(0, 10)
+MinimizeCorner.Parent = MinimizeButton
 
 --========================================
 -- CONTENT
 --========================================
 
 local Content = Instance.new("ScrollingFrame")
-
 Content.Name = "Content"
-
-Content.Position =
-    UDim2.new(0, 15, 0, 78)
-
-Content.Size =
-    UDim2.new(1, -30, 1, -90)
-
+Content.Size = UDim2.new(1, -20, 1, -82)
+Content.Position = UDim2.fromOffset(10, 78)
 Content.BackgroundTransparency = 1
 Content.BorderSizePixel = 0
-
 Content.ScrollBarThickness = 3
-Content.ScrollBarImageColor3 =
-    Colors.Purple
-
-Content.AutomaticCanvasSize =
-    Enum.AutomaticSize.Y
-
-Content.CanvasSize =
-    UDim2.new(0, 0, 0, 0)
-
-Content.ZIndex = 5
+Content.ScrollBarImageColor3 = Settings.ESPColor
+Content.CanvasSize = UDim2.new(0, 0, 0, 0)
+Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Content.Parent = Main
 
 local ContentLayout = Instance.new("UIListLayout")
-
-ContentLayout.Padding =
-    UDim.new(0, 8)
-
-ContentLayout.SortOrder =
-    Enum.SortOrder.LayoutOrder
-
+ContentLayout.Padding = UDim.new(0, 8)
+ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ContentLayout.Parent = Content
 
 local ContentPadding = Instance.new("UIPadding")
-
-ContentPadding.PaddingBottom =
-    UDim.new(0, 10)
-
+ContentPadding.PaddingTop = UDim.new(0, 2)
+ContentPadding.PaddingBottom = UDim.new(0, 10)
 ContentPadding.Parent = Content
 
 --========================================
--- CONTROL CREATOR
+-- BUTTON CREATOR
 --========================================
 
-local function CreateSection(Text, Order)
-
-    local Label = Instance.new("TextLabel")
-
-    Label.Name = "Section_" .. Text
-
-    Label.Size =
-        UDim2.new(1, -5, 0, 24)
-
-    Label.BackgroundTransparency = 1
-
-    Label.Text = Text
-
-    Label.TextColor3 =
-        Colors.Purple
-
-    Label.TextSize = 11
-
-    Label.Font =
-        Enum.Font.GothamBold
-
-    Label.TextXAlignment =
-        Enum.TextXAlignment.Left
-
-    Label.LayoutOrder = Order
-
-    Label.Parent = Content
-
-    return Label
-end
-
-local function CreateControlButton(Name, Text, Order)
-
+local function CreateButton(Name, Text)
     local Button = Instance.new("TextButton")
 
     Button.Name = Name
-
-    Button.Size =
-        UDim2.new(1, -5, 0, 42)
-
-    Button.BackgroundColor3 =
-        Colors.Panel
-
+    Button.Size = UDim2.new(1, -4, 0, 40)
+    Button.BackgroundColor3 = Color3.fromRGB(27, 21, 35)
     Button.BorderSizePixel = 0
-
     Button.AutoButtonColor = false
-
     Button.Text = Text
+    Button.TextColor3 = Color3.fromRGB(225, 215, 235)
+    Button.TextSize = 13
+    Button.Font = Enum.Font.GothamMedium
 
-    Button.TextColor3 =
-        Colors.Text
-
-    Button.TextSize = 12
-
-    Button.Font =
-        Enum.Font.GothamSemibold
-
-    Button.TextXAlignment =
-        Enum.TextXAlignment.Left
-
-    Button.LayoutOrder = Order
-
-    Button.ZIndex = 10
     Button.Parent = Content
 
-    local Padding = Instance.new("UIPadding")
-
-    Padding.PaddingLeft =
-        UDim.new(0, 14)
-
-    Padding.Parent = Button
-
     local Corner = Instance.new("UICorner")
-
-    Corner.CornerRadius =
-        UDim.new(0, 11)
-
+    Corner.CornerRadius = UDim.new(0, 10)
     Corner.Parent = Button
 
     local Stroke = Instance.new("UIStroke")
-
-    Stroke.Color =
-        Colors.PurpleDark
-
-    Stroke.Transparency = 0.65
+    Stroke.Color = Color3.fromRGB(55, 42, 68)
     Stroke.Thickness = 1
-
+    Stroke.Transparency = 0.35
     Stroke.Parent = Button
 
     Button.MouseEnter:Connect(function()
-
         TweenService:Create(
             Button,
-            TweenInfo.new(0.15),
+            TweenInfo.new(0.12),
             {
-                BackgroundColor3 =
-                    Color3.fromRGB(34, 24, 47)
+                BackgroundColor3 = Color3.fromRGB(47, 34, 61)
             }
         ):Play()
-
     end)
 
     Button.MouseLeave:Connect(function()
-
         TweenService:Create(
             Button,
-            TweenInfo.new(0.15),
+            TweenInfo.new(0.12),
             {
-                BackgroundColor3 =
-                    Colors.Panel
+                BackgroundColor3 = Color3.fromRGB(27, 21, 35)
             }
         ):Play()
-
-    end)
-
-    Button.MouseButton1Click:Connect(function()
-
-        TweenService:Create(
-            Button,
-            TweenInfo.new(0.08),
-            {
-                Size =
-                    UDim2.new(1, -9, 0, 40)
-            }
-        ):Play()
-
-        task.delay(0.08, function()
-
-            if Button.Parent then
-
-                TweenService:Create(
-                    Button,
-                    TweenInfo.new(0.12),
-                    {
-                        Size =
-                            UDim2.new(1, -5, 0, 42)
-                    }
-                ):Play()
-
-            end
-
-        end)
-
     end)
 
     return Button
 end
 
 --========================================
--- ESP SETTINGS
+-- BUTTONS
 --========================================
-
-CreateSection("ESP", 1)
 
 local ESPButton =
-    CreateControlButton(
-        "ESPButton",
-        "ESP: ON",
-        2
-    )
+    CreateButton("ESPButton", "ESP: ON")
 
 local BoxButton =
-    CreateControlButton(
-        "BoxButton",
-        "Box ESP: ON",
-        3
-    )
+    CreateButton("BoxButton", "Box ESP: ON")
 
 local ModelButton =
-    CreateControlButton(
-        "ModelButton",
-        "Model ESP: OFF",
-        4
-    )
+    CreateButton("ModelButton", "Model ESP: OFF")
 
 local NameButton =
-    CreateControlButton(
-        "NameButton",
-        "Name ESP: ON",
-        5
-    )
+    CreateButton("NameButton", "Name ESP: ON")
 
 local HealthButton =
-    CreateControlButton(
-        "HealthButton",
-        "Health Bar: ON",
-        6
-    )
+    CreateButton("HealthButton", "Health ESP: ON")
 
 local DistanceButton =
-    CreateControlButton(
-        "DistanceButton",
-        "Distance: ON",
-        7
-    )
-
-CreateSection("Visuals", 8)
+    CreateButton("DistanceButton", "Distance ESP: ON")
 
 local TracerButton =
-    CreateControlButton(
-        "TracerButton",
-        "Tracers: OFF",
-        9
-    )
+    CreateButton("TracerButton", "Tracer ESP: OFF")
 
 local SkeletonButton =
-    CreateControlButton(
-        "SkeletonButton",
-        "Skeleton: OFF",
-        10
-    )
+    CreateButton("SkeletonButton", "Skeleton ESP: OFF")
 
 local TeamButton =
-    CreateControlButton(
-        "TeamButton",
-        "Team Check: ON",
-        11
-    )
+    CreateButton("TeamButton", "Team Check: ON")
 
 local RainbowButton =
-    CreateControlButton(
-        "RainbowButton",
-        "Rainbow ESP: OFF",
-        12
-    )
+    CreateButton("RainbowButton", "Rainbow: OFF")
 
 local DistanceLimitButton =
-    CreateControlButton(
-        "DistanceLimitButton",
-        "Max Distance: 1000",
-        13
-    )
+    CreateButton("DistanceLimitButton", "Max Distance: 1000")
 
 local ColorButton =
-    CreateControlButton(
-        "ColorButton",
-        "ESP Color: Purple",
-        14
-    )
+    CreateButton("ColorButton", "ESP Color: Purple")
 
 --========================================
--- ESP DATA
+-- ESP FOLDER
 --========================================
-
-local ESPObjects = {}
-
-local SkeletonObjects = {}
-
-local TracerObjects = {}
 
 local ESPFolder = Instance.new("Folder")
-
 ESPFolder.Name = "LunarESP_Objects"
 ESPFolder.Parent = ScreenGui
 
 --========================================
--- COLOR SYSTEM
+-- ESP STORAGE
 --========================================
 
-local ESPColors = {
-
-    Color3.fromRGB(175, 100, 255),
-
-    Color3.fromRGB(100, 200, 255),
-
-    Color3.fromRGB(100, 255, 160),
-
-    Color3.fromRGB(255, 220, 100),
-
-    Color3.fromRGB(255, 100, 150),
-
-    Color3.fromRGB(255, 255, 255)
-
-}
-
-local ColorIndex = 1
-
-local function GetESPColor()
-
-    if Settings.Rainbow then
-
-        return Color3.fromHSV(
-            (tick() % 5) / 5,
-            0.85,
-            1
-        )
-
-    end
-
-    return ESPColors[ColorIndex]
-end
+local ESPObjects = {}
+local SkeletonObjects = {}
 
 --========================================
--- CHARACTER VALIDATION
+-- CHARACTER
 --========================================
 
 local function GetCharacter(Player)
-
     if not Player then
         return nil
     end
 
-    local Character =
-        Player.Character
+    local Character = Player.Character
 
     if not Character then
         return nil
     end
 
     local Humanoid =
-        Character:FindFirstChildOfClass(
-            "Humanoid"
-        )
+        Character:FindFirstChildOfClass("Humanoid")
 
     local Root =
-        Character:FindFirstChild(
-            "HumanoidRootPart"
-        )
+        Character:FindFirstChild("HumanoidRootPart")
 
-    if not Humanoid
-    or Humanoid.Health <= 0
-    or not Root then
-
+    if not Humanoid or not Root then
         return nil
     end
 
-    return Character, Humanoid, Root
+    if Humanoid.Health <= 0 then
+        return nil
+    end
+
+    return Character
 end
 
 --========================================
@@ -675,27 +421,20 @@ end
 --========================================
 
 local function IsEnemy(Player)
-
-    if Player == LocalPlayer then
-        return false
-    end
-
     if not Settings.TeamCheck then
         return true
     end
 
-    if LocalPlayer.Team
-    and Player.Team then
-
-        return LocalPlayer.Team ~=
-            Player.Team
+    if not Player or Player == LocalPlayer then
+        return false
     end
 
-    if LocalPlayer.TeamColor
-    and Player.TeamColor then
+    if LocalPlayer.Team ~= nil and Player.Team ~= nil then
+        return LocalPlayer.Team ~= Player.Team
+    end
 
-        return LocalPlayer.TeamColor ~=
-            Player.TeamColor
+    if LocalPlayer.TeamColor ~= nil and Player.TeamColor ~= nil then
+        return LocalPlayer.TeamColor ~= Player.TeamColor
     end
 
     return true
@@ -705,45 +444,47 @@ end
 -- DISTANCE CHECK
 --========================================
 
-local function IsWithinDistance(Root)
+local function IsWithinDistance(Player)
+    local Character = GetCharacter(Player)
 
-    local Camera =
-        workspace.CurrentCamera
+    if not Character then
+        return false
+    end
 
-    if not Camera or not Root then
+    local Root = Character:FindFirstChild("HumanoidRootPart")
+
+    local LocalCharacter = GetCharacter(LocalPlayer)
+
+    if not Root or not LocalCharacter then
+        return false
+    end
+
+    local LocalRoot =
+        LocalCharacter:FindFirstChild("HumanoidRootPart")
+
+    if not LocalRoot then
         return false
     end
 
     local Distance =
-        (Camera.CFrame.Position -
-            Root.Position).Magnitude
+        (Root.Position - LocalRoot.Position).Magnitude
 
-    return Distance <=
-        Settings.MaxDistance
+    return Distance <= Settings.MaxDistance
 end
 
 --========================================
--- FULL MODEL PARTS
+-- MODEL PARTS
 --========================================
 
 local function GetModelParts(Character)
-
     local Parts = {}
 
-    for _, Object in ipairs(
-        Character:GetDescendants()
-    ) do
-
-        if Object:IsA("BasePart")
-        and Object.Transparency < 1 then
-
-            table.insert(
-                Parts,
-                Object
-            )
-
+    for _, Object in ipairs(Character:GetDescendants()) do
+        if Object:IsA("BasePart") then
+            if Object.Transparency < 1 then
+                table.insert(Parts, Object)
+            end
         end
-
     end
 
     return Parts
@@ -754,16 +495,7 @@ end
 --========================================
 
 local function GetScreenBounds(Character)
-
-    local Camera =
-        workspace.CurrentCamera
-
-    if not Camera then
-        return nil
-    end
-
-    local Parts =
-        GetModelParts(Character)
+    local Parts = GetModelParts(Character)
 
     if #Parts == 0 then
         return nil
@@ -771,467 +503,246 @@ local function GetScreenBounds(Character)
 
     local MinX = math.huge
     local MinY = math.huge
-
     local MaxX = -math.huge
     local MaxY = -math.huge
 
-    local VisiblePoints = 0
+    local HasVisiblePoint = false
 
     for _, Part in ipairs(Parts) do
-
-        local Size =
-            Part.Size / 2
+        local Size = Part.Size
+        local CF = Part.CFrame
 
         local Corners = {
-
-            Part.CFrame *
-                Vector3.new(
-                    Size.X,
-                    Size.Y,
-                    Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    -Size.X,
-                    Size.Y,
-                    Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    Size.X,
-                    -Size.Y,
-                    Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    -Size.X,
-                    -Size.Y,
-                    Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    Size.X,
-                    Size.Y,
-                    -Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    -Size.X,
-                    Size.Y,
-                    -Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    Size.X,
-                    -Size.Y,
-                    -Size.Z
-                ),
-
-            Part.CFrame *
-                Vector3.new(
-                    -Size.X,
-                    -Size.Y,
-                    -Size.Z
-                )
-
+            Vector3.new(-Size.X/2, -Size.Y/2, -Size.Z/2),
+            Vector3.new(-Size.X/2, -Size.Y/2,  Size.Z/2),
+            Vector3.new(-Size.X/2,  Size.Y/2, -Size.Z/2),
+            Vector3.new(-Size.X/2,  Size.Y/2,  Size.Z/2),
+            Vector3.new( Size.X/2, -Size.Y/2, -Size.Z/2),
+            Vector3.new( Size.X/2, -Size.Y/2,  Size.Z/2),
+            Vector3.new( Size.X/2,  Size.Y/2, -Size.Z/2),
+            Vector3.new( Size.X/2,  Size.Y/2,  Size.Z/2)
         }
 
-        for _, WorldPosition in ipairs(Corners) do
+        for _, Corner in ipairs(Corners) do
+            local WorldPosition =
+                CF:PointToWorldSpace(Corner)
 
-            local ScreenPosition,
-                OnScreen =
-                Camera:WorldToViewportPoint(
-                    WorldPosition
-                )
+            local ScreenPosition, Visible =
+                Camera:WorldToViewportPoint(WorldPosition)
 
-            if ScreenPosition.Z > 0 then
+            if Visible and ScreenPosition.Z > 0 then
+                HasVisiblePoint = true
 
-                if OnScreen then
-                    VisiblePoints += 1
-                end
-
-                MinX = math.min(
-                    MinX,
-                    ScreenPosition.X
-                )
-
-                MinY = math.min(
-                    MinY,
-                    ScreenPosition.Y
-                )
-
-                MaxX = math.max(
-                    MaxX,
-                    ScreenPosition.X
-                )
-
-                MaxY = math.max(
-                    MaxY,
-                    ScreenPosition.Y
-                )
-
+                MinX = math.min(MinX, ScreenPosition.X)
+                MinY = math.min(MinY, ScreenPosition.Y)
+                MaxX = math.max(MaxX, ScreenPosition.X)
+                MaxY = math.max(MaxY, ScreenPosition.Y)
             end
-
         end
-
     end
 
-    if VisiblePoints == 0
-    or MinX == math.huge then
-
+    if not HasVisiblePoint then
         return nil
     end
 
-    return MinX, MinY, MaxX, MaxY
+    return {
+        MinX = MinX,
+        MinY = MinY,
+        MaxX = MaxX,
+        MaxY = MaxY,
+
+        Width = MaxX - MinX,
+        Height = MaxY - MinY
+    }
 end
 
 --========================================
--- WINDOW ANIMATION
+-- END OF PART 1
 --========================================
 
-local FullSize =
-    UDim2.new(0, 340, 0, 520)
-
-local MiniSize =
-    UDim2.new(0, 64, 0, 64)
-
-local IsMinimized = false
-
-Main.Size =
-    UDim2.new(0, 0, 0, 0)
-
-TweenService:Create(
-    Main,
-    TweenInfo.new(
-        0.65,
-        Enum.EasingStyle.Back,
-        Enum.EasingDirection.Out
-    ),
-    {
-        Size = FullSize
-    }
-):Play()
-
 --========================================
--- MOON ANIMATION
+-- LUNAR ESP 3.0
+-- PART 2/3
+-- ESP OBJECT SYSTEM
 --========================================
 
-task.spawn(function()
-
-    while ScreenGui.Parent do
-
-        TweenService:Create(
-            LogoButton,
-            TweenInfo.new(
-                1,
-                Enum.EasingStyle.Sine,
-                Enum.EasingDirection.InOut
-            ),
-            {
-                TextColor3 =
-                    Color3.fromRGB(
-                        220,
-                        180,
-                        255
-                    ),
-                Rotation = 8
-            }
-        ):Play()
-
-        task.wait(1)
-
-        TweenService:Create(
-            LogoButton,
-            TweenInfo.new(
-                1,
-                Enum.EasingStyle.Sine,
-                Enum.EasingDirection.InOut
-            ),
-            {
-                TextColor3 =
-                    Color3.fromRGB(
-                        175,
-                        125,
-                        240
-                    ),
-                Rotation = -8
-            }
-        ):Play()
-
-        task.wait(1)
-
-    end
-
-end)
-
 --========================================
--- PART 2/3 - BOX / HEALTH / MODEL / TRACER
+-- CREATE ESP
 --========================================
 
 local function CreateESP(Player)
-
-    if Player == LocalPlayer
-    or ESPObjects[Player] then
+    if Player == LocalPlayer then
         return
     end
 
-    local Object = {}
+    if ESPObjects[Player] then
+        return ESPObjects[Player]
+    end
+
+    local Folder = Instance.new("Folder")
+    Folder.Name = "ESP_" .. Player.Name
+    Folder.Parent = ESPFolder
+
+    local Data = {
+        Folder = Folder,
+        Player = Player
+    }
 
     --========================================
-    -- 2D BOX
+    -- BOX
     --========================================
 
     local Box = Instance.new("Frame")
-
     Box.Name = "Box"
     Box.BackgroundTransparency = 1
     Box.BorderSizePixel = 0
     Box.Visible = false
     Box.ZIndex = 5
-    Box.Parent = ScreenGui
+    Box.Parent = Folder
 
     local BoxStroke = Instance.new("UIStroke")
-
-    BoxStroke.Thickness = 1.5
     BoxStroke.Color = Settings.ESPColor
+    BoxStroke.Thickness = 1.5
     BoxStroke.Transparency = 0
-
     BoxStroke.Parent = Box
 
-    Object.Box = Box
-    Object.BoxStroke = BoxStroke
+    Data.Box = Box
+    Data.BoxStroke = BoxStroke
 
     --========================================
-    -- BOX CORNERS
+    -- CORNER BOX
     --========================================
 
-    local CornerTL = Instance.new("Frame")
-    local CornerTR = Instance.new("Frame")
-    local CornerBL = Instance.new("Frame")
-    local CornerBR = Instance.new("Frame")
+    local Corners = {}
 
-    local Corners = {
-        CornerTL,
-        CornerTR,
-        CornerBL,
-        CornerBR
-    }
-
-    for _, Corner in ipairs(Corners) do
-
-        Corner.BackgroundColor3 =
-            Settings.ESPColor
-
+    for Index = 1, 8 do
+        local Corner = Instance.new("Frame")
+        Corner.Name = "Corner_" .. Index
         Corner.BorderSizePixel = 0
+        Corner.BackgroundColor3 = Settings.ESPColor
+        Corner.Visible = false
         Corner.ZIndex = 6
-        Corner.Parent = ScreenGui
+        Corner.Parent = Folder
 
+        Corners[Index] = Corner
     end
 
-    CornerTL.Size =
-        UDim2.new(0, 8, 0, 2)
-
-    CornerTR.Size =
-        UDim2.new(0, 8, 0, 2)
-
-    CornerBL.Size =
-        UDim2.new(0, 8, 0, 2)
-
-    CornerBR.Size =
-        UDim2.new(0, 8, 0, 2)
-
-    Object.Corners = Corners
+    Data.Corners = Corners
 
     --========================================
-    -- HEALTH BAR BACKGROUND
+    -- HEALTH BACKGROUND
     --========================================
 
     local HealthBack = Instance.new("Frame")
-
     HealthBack.Name = "HealthBack"
-
-    HealthBack.BackgroundColor3 =
-        Color3.fromRGB(20, 20, 25)
-
     HealthBack.BorderSizePixel = 0
-
+    HealthBack.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    HealthBack.BackgroundTransparency = 0.25
     HealthBack.Visible = false
+    HealthBack.ZIndex = 6
+    HealthBack.Parent = Folder
 
-    HealthBack.ZIndex = 5
+    local HealthBackCorner = Instance.new("UICorner")
+    HealthBackCorner.CornerRadius = UDim.new(0, 2)
+    HealthBackCorner.Parent = HealthBack
 
-    HealthBack.Parent = ScreenGui
-
-    local HealthCorner = Instance.new("UICorner")
-
-    HealthCorner.CornerRadius =
-        UDim.new(0, 2)
-
-    HealthCorner.Parent = HealthBack
+    Data.HealthBack = HealthBack
 
     --========================================
-    -- HEALTH BAR
+    -- HEALTH FILL
     --========================================
 
     local HealthFill = Instance.new("Frame")
-
-    HealthFill.Name = "Health"
-
-    HealthFill.AnchorPoint =
-        Vector2.new(0, 1)
-
-    HealthFill.Position =
-        UDim2.new(0, 0, 1, 0)
-
-    HealthFill.Size =
-        UDim2.new(1, 0, 1, 0)
-
-    HealthFill.BackgroundColor3 =
-        Colors.Green
-
+    HealthFill.Name = "HealthFill"
+    HealthFill.AnchorPoint = Vector2.new(0, 1)
+    HealthFill.Position = UDim2.new(0, 0, 1, 0)
+    HealthFill.Size = UDim2.new(1, 0, 1, 0)
     HealthFill.BorderSizePixel = 0
-
-    HealthFill.ZIndex = 6
-
+    HealthFill.BackgroundColor3 = Color3.fromRGB(80, 255, 120)
+    HealthFill.Visible = false
+    HealthFill.ZIndex = 7
     HealthFill.Parent = HealthBack
 
-    local HealthFillCorner =
-        Instance.new("UICorner")
+    local HealthCorner = Instance.new("UICorner")
+    HealthCorner.CornerRadius = UDim.new(0, 2)
+    HealthCorner.Parent = HealthFill
 
-    HealthFillCorner.CornerRadius =
-        UDim.new(0, 2)
-
-    HealthFillCorner.Parent =
-        HealthFill
-
-    Object.HealthBack = HealthBack
-    Object.HealthFill = HealthFill
+    Data.HealthFill = HealthFill
 
     --========================================
     -- NAME
     --========================================
 
     local Name = Instance.new("TextLabel")
-
     Name.Name = "Name"
-
-    Name.AnchorPoint =
-        Vector2.new(0.5, 1)
-
     Name.BackgroundTransparency = 1
-
-    Name.TextColor3 =
-        Settings.ESPColor
-
+    Name.Text = Player.DisplayName
+    Name.TextColor3 = Settings.ESPColor
+    Name.TextStrokeColor3 = Color3.new(0, 0, 0)
     Name.TextStrokeTransparency = 0
-
     Name.TextSize = 13
-
-    Name.Font =
-        Enum.Font.GothamBold
-
+    Name.Font = Enum.Font.GothamBold
+    Name.AnchorPoint = Vector2.new(0.5, 1)
     Name.Visible = false
+    Name.ZIndex = 8
+    Name.Parent = Folder
 
-    Name.ZIndex = 7
-
-    Name.Parent = ScreenGui
-
-    Object.Name = Name
+    Data.Name = Name
 
     --========================================
     -- DISTANCE
     --========================================
 
     local Distance = Instance.new("TextLabel")
-
     Distance.Name = "Distance"
-
-    Distance.AnchorPoint =
-        Vector2.new(0.5, 0)
-
     Distance.BackgroundTransparency = 1
-
-    Distance.TextColor3 =
-        Colors.SubText
-
+    Distance.TextColor3 = Color3.fromRGB(205, 195, 215)
+    Distance.TextStrokeColor3 = Color3.new(0, 0, 0)
     Distance.TextStrokeTransparency = 0
-
-    Distance.TextSize = 10
-
-    Distance.Font =
-        Enum.Font.Gotham
-
+    Distance.TextSize = 11
+    Distance.Font = Enum.Font.Gotham
+    Distance.AnchorPoint = Vector2.new(0.5, 0)
     Distance.Visible = false
+    Distance.ZIndex = 8
+    Distance.Parent = Folder
 
-    Distance.ZIndex = 7
-
-    Distance.Parent = ScreenGui
-
-    Object.Distance = Distance
+    Data.Distance = Distance
 
     --========================================
-    -- MODEL ESP
+    -- MODEL HIGHLIGHT
     --========================================
 
-    local ModelHighlight =
-        Instance.new("Highlight")
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = "ModelHighlight"
+    Highlight.FillColor = Settings.ESPColor
+    Highlight.OutlineColor = Settings.ESPColor
+    Highlight.FillTransparency = 0.78
+    Highlight.OutlineTransparency = 0.05
+    Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    Highlight.Enabled = false
+    Highlight.Parent = Folder
 
-    ModelHighlight.Name =
-        "ModelESP"
-
-    ModelHighlight.DepthMode =
-        Enum.HighlightDepthMode.AlwaysOnTop
-
-    ModelHighlight.FillColor =
-        Settings.ESPColor
-
-    ModelHighlight.FillTransparency =
-        0.78
-
-    ModelHighlight.OutlineColor =
-        Settings.ESPColor
-
-    ModelHighlight.OutlineTransparency =
-        0
-
-    ModelHighlight.Enabled = false
-
-    ModelHighlight.Parent =
-        ESPFolder
-
-    Object.ModelHighlight =
-        ModelHighlight
+    Data.Highlight = Highlight
 
     --========================================
     -- TRACER
     --========================================
 
     local Tracer = Instance.new("Frame")
-
     Tracer.Name = "Tracer"
-
-    Tracer.AnchorPoint =
-        Vector2.new(0.5, 0.5)
-
-    Tracer.BackgroundColor3 =
-        Settings.ESPColor
-
+    Tracer.AnchorPoint = Vector2.new(0.5, 0.5)
     Tracer.BorderSizePixel = 0
-
+    Tracer.BackgroundColor3 = Settings.ESPColor
+    Tracer.Size = UDim2.fromOffset(1.5, 1)
     Tracer.Visible = false
-
     Tracer.ZIndex = 4
+    Tracer.Parent = Folder
 
-    Tracer.Parent = ScreenGui
+    Data.Tracer = Tracer
 
-    Object.Tracer = Tracer
+    ESPObjects[Player] = Data
 
-    ESPObjects[Player] = Object
+    return Data
 end
 
 --========================================
@@ -1239,38 +750,14 @@ end
 --========================================
 
 local function RemoveESP(Player)
+    local Data = ESPObjects[Player]
 
-    local Object =
-        ESPObjects[Player]
-
-    if not Object then
+    if not Data then
         return
     end
 
-    for _, Item in pairs(Object) do
-
-        if typeof(Item) == "Instance" then
-
-            pcall(function()
-                Item:Destroy()
-            end)
-
-        elseif typeof(Item) == "table" then
-
-            for _, Part in pairs(Item) do
-
-                if typeof(Part) == "Instance" then
-
-                    pcall(function()
-                        Part:Destroy()
-                    end)
-
-                end
-
-            end
-
-        end
-
+    if Data.Folder then
+        Data.Folder:Destroy()
     end
 
     ESPObjects[Player] = nil
@@ -1280,17 +767,39 @@ end
 -- HIDE ESP
 --========================================
 
-local function HideESP(Object)
+local function HideESP(Data)
+    if not Data then
+        return
+    end
 
-    Object.Box.Visible = false
-    Object.HealthBack.Visible = false
-    Object.Name.Visible = false
-    Object.Distance.Visible = false
-    Object.ModelHighlight.Enabled = false
-    Object.Tracer.Visible = false
+    if Data.Box then
+        Data.Box.Visible = false
+    end
 
-    for _, Corner in ipairs(Object.Corners) do
-        Corner.Visible = false
+    if Data.Corners then
+        for _, Corner in ipairs(Data.Corners) do
+            Corner.Visible = false
+        end
+    end
+
+    if Data.HealthBack then
+        Data.HealthBack.Visible = false
+    end
+
+    if Data.Name then
+        Data.Name.Visible = false
+    end
+
+    if Data.Distance then
+        Data.Distance.Visible = false
+    end
+
+    if Data.Highlight then
+        Data.Highlight.Enabled = false
+    end
+
+    if Data.Tracer then
+        Data.Tracer.Visible = false
     end
 end
 
@@ -1298,127 +807,94 @@ end
 -- UPDATE BOX
 --========================================
 
-local function UpdateBox(
-    Object,
-    MinX,
-    MinY,
-    MaxX,
-    MaxY,
-    Color
-)
+local function UpdateBox(Data, Bounds)
+    if not Data or not Bounds then
+        return
+    end
 
     if not Settings.BoxESP then
+        Data.Box.Visible = false
 
-        Object.Box.Visible = false
-
-        for _, Corner in ipairs(Object.Corners) do
+        for _, Corner in ipairs(Data.Corners) do
             Corner.Visible = false
         end
 
         return
     end
 
-    local Width =
-        math.max(MaxX - MinX, 2)
+    local X = Bounds.MinX
+    local Y = Bounds.MinY
+    local W = math.max(Bounds.Width, 2)
+    local H = math.max(Bounds.Height, 2)
 
-    local Height =
-        math.max(MaxY - MinY, 2)
+    Data.Box.Position = UDim2.fromOffset(X, Y)
+    Data.Box.Size = UDim2.fromOffset(W, H)
 
-    Object.Box.Position =
-        UDim2.fromOffset(
-            MinX,
-            MinY
-        )
+    Data.BoxStroke.Color = Settings.ESPColor
+    Data.Box.Visible = true
 
-    Object.Box.Size =
-        UDim2.fromOffset(
-            Width,
-            Height
-        )
+    local CornerSize = math.clamp(
+        math.min(W, H) * 0.22,
+        5,
+        18
+    )
 
-    Object.BoxStroke.Color =
-        Color
+    local Thickness = 2
 
-    Object.Box.Visible = true
+    local C = Data.Corners
 
-    --========================================
-    -- TOP LEFT
-    --========================================
+    -- Top Left Horizontal
+    C[1].Position = UDim2.fromOffset(X, Y)
+    C[1].Size = UDim2.fromOffset(CornerSize, Thickness)
 
-    local TL =
-        Object.Corners[1]
+    -- Top Left Vertical
+    C[2].Position = UDim2.fromOffset(X, Y)
+    C[2].Size = UDim2.fromOffset(Thickness, CornerSize)
 
-    TL.Position =
-        UDim2.fromOffset(
-            MinX,
-            MinY
-        )
+    -- Top Right Horizontal
+    C[3].Position = UDim2.fromOffset(
+        X + W - CornerSize,
+        Y
+    )
+    C[3].Size = UDim2.fromOffset(CornerSize, Thickness)
 
-    TL.Size =
-        UDim2.fromOffset(
-            math.min(10, Width / 3),
-            2
-        )
+    -- Top Right Vertical
+    C[4].Position = UDim2.fromOffset(
+        X + W - Thickness,
+        Y
+    )
+    C[4].Size = UDim2.fromOffset(Thickness, CornerSize)
 
-    --========================================
-    -- TOP RIGHT
-    --========================================
+    -- Bottom Left Horizontal
+    C[5].Position = UDim2.fromOffset(
+        X,
+        Y + H - Thickness
+    )
+    C[5].Size = UDim2.fromOffset(CornerSize, Thickness)
 
-    local TR =
-        Object.Corners[2]
+    -- Bottom Left Vertical
+    C[6].Position = UDim2.fromOffset(
+        X,
+        Y + H - CornerSize
+    )
+    C[6].Size = UDim2.fromOffset(Thickness, CornerSize)
 
-    TR.Position =
-        UDim2.fromOffset(
-            MaxX - math.min(10, Width / 3),
-            MinY
-        )
+    -- Bottom Right Horizontal
+    C[7].Position = UDim2.fromOffset(
+        X + W - CornerSize,
+        Y + H - Thickness
+    )
+    C[7].Size = UDim2.fromOffset(CornerSize, Thickness)
 
-    TR.Size =
-        UDim2.fromOffset(
-            math.min(10, Width / 3),
-            2
-        )
+    -- Bottom Right Vertical
+    C[8].Position = UDim2.fromOffset(
+        X + W - Thickness,
+        Y + H - CornerSize
+    )
+    C[8].Size = UDim2.fromOffset(Thickness, CornerSize)
 
-    --========================================
-    -- BOTTOM LEFT
-    --========================================
-
-    local BL =
-        Object.Corners[3]
-
-    BL.Position =
-        UDim2.fromOffset(
-            MinX,
-            MaxY - 2
-        )
-
-    BL.Size =
-        UDim2.fromOffset(
-            math.min(10, Width / 3),
-            2
-        )
-
-    --========================================
-    -- BOTTOM RIGHT
-    --========================================
-
-    local BR =
-        Object.Corners[4]
-
-    BR.Position =
-        UDim2.fromOffset(
-            MaxX - math.min(10, Width / 3),
-            MaxY - 2
-        )
-
-    BR.Size =
-        UDim2.fromOffset(
-            math.min(10, Width / 3),
-            2
-        )
-
-    for _, Corner in ipairs(Object.Corners) do
-        Corner.BackgroundColor3 = Color
+    for _, Corner in ipairs(C) do
+        Corner.BackgroundColor3 = Settings.ESPColor
         Corner.Visible = true
     end
 end
@@ -1427,46 +903,44 @@ end
 -- UPDATE HEALTH
 --========================================
 
-local function UpdateHealth(
-    Object,
-    MinX,
-    MinY,
-    MaxY,
-    Humanoid,
-    Color
-)
-
+local function UpdateHealth(Data, Character, Bounds)
     if not Settings.HealthESP then
-
-        Object.HealthBack.Visible = false
-
+        Data.HealthBack.Visible = false
         return
     end
 
-    local Height =
-        math.max(MaxY - MinY, 5)
+    local Humanoid =
+        Character:FindFirstChildOfClass("Humanoid")
 
-    local HealthPercent =
-        math.clamp(
-            Humanoid.Health /
-            math.max(Humanoid.MaxHealth, 1),
-            0,
-            1
-        )
+    if not Humanoid then
+        Data.HealthBack.Visible = false
+        return
+    end
 
-    Object.HealthBack.Position =
+    local MaxHealth = math.max(Humanoid.MaxHealth, 1)
+    local Health = math.clamp(
+        Humanoid.Health,
+        0,
+        MaxHealth
+    )
+
+    local HealthPercent = Health / MaxHealth
+
+    local Height = math.max(Bounds.Height, 2)
+
+    Data.HealthBack.Position =
         UDim2.fromOffset(
-            MinX - 7,
-            MinY
+            Bounds.MinX - 7,
+            Bounds.MinY
         )
 
-    Object.HealthBack.Size =
+    Data.HealthBack.Size =
         UDim2.fromOffset(
             4,
             Height
         )
 
-    Object.HealthFill.Size =
+    Data.HealthFill.Size =
         UDim2.new(
             1,
             0,
@@ -1474,825 +948,267 @@ local function UpdateHealth(
             0
         )
 
-    Object.HealthFill.BackgroundColor3 =
-        Color3.fromRGB(
-            255 * (1 - HealthPercent),
-            255 * HealthPercent,
-            80
-        )
+    if HealthPercent > 0.6 then
+        Data.HealthFill.BackgroundColor3 =
+            Color3.fromRGB(70, 255, 100)
+    elseif HealthPercent > 0.3 then
+        Data.HealthFill.BackgroundColor3 =
+            Color3.fromRGB(255, 200, 70)
+    else
+        Data.HealthFill.BackgroundColor3 =
+            Color3.fromRGB(255, 70, 70)
+    end
 
-    Object.HealthBack.Visible = true
+    Data.HealthBack.Visible = true
 end
 
 --========================================
--- UPDATE NAME / DISTANCE
+-- UPDATE NAME
 --========================================
 
-local function UpdateInfo(
-    Object,
-    MinX,
-    MinY,
-    MaxX,
-    MaxY,
-    Player,
-    Distance,
-    Color
-)
-
-    local CenterX =
-        (MinX + MaxX) / 2
-
-    if Settings.NameESP then
-
-        Object.Name.Position =
-            UDim2.fromOffset(
-                CenterX,
-                MinY - 4
-            )
-
-        Object.Name.Text =
-            Player.DisplayName
-
-        Object.Name.TextColor3 =
-            Color
-
-        Object.Name.Visible = true
-
-    else
-
-        Object.Name.Visible = false
-
+local function UpdateName(Data, Bounds)
+    if not Settings.NameESP then
+        Data.Name.Visible = false
+        return
     end
 
-    if Settings.DistanceESP then
+    Data.Name.Text = Data.Player.DisplayName
+    Data.Name.TextColor3 = Settings.ESPColor
 
-        Object.Distance.Position =
-            UDim2.fromOffset(
-                CenterX,
-                MaxY + 3
-            )
+    Data.Name.Position =
+        UDim2.fromOffset(
+            Bounds.MinX + Bounds.Width / 2,
+            Bounds.MinY - 3
+        )
 
-        Object.Distance.Text =
-            "[" ..
-            math.floor(Distance) ..
-            " studs]"
+    Data.Name.Size =
+        UDim2.fromOffset(
+            math.max(Bounds.Width + 80, 120),
+            20
+        )
 
-        Object.Distance.Visible = true
+    Data.Name.Visible = true
+end
 
-    else
+--========================================
+-- UPDATE DISTANCE
+--========================================
 
-        Object.Distance.Visible = false
-
+local function UpdateDistance(Data, Character, Bounds)
+    if not Settings.DistanceESP then
+        Data.Distance.Visible = false
+        return
     end
+
+    local LocalCharacter =
+        GetCharacter(LocalPlayer)
+
+    if not LocalCharacter then
+        Data.Distance.Visible = false
+        return
+    end
+
+    local LocalRoot =
+        LocalCharacter:FindFirstChild("HumanoidRootPart")
+
+    local Root =
+        Character:FindFirstChild("HumanoidRootPart")
+
+    if not LocalRoot or not Root then
+        Data.Distance.Visible = false
+        return
+    end
+
+    local Distance =
+        (Root.Position - LocalRoot.Position).Magnitude
+
+    Data.Distance.Text =
+        string.format("%dm", math.floor(Distance))
+
+    Data.Distance.Position =
+        UDim2.fromOffset(
+            Bounds.MinX + Bounds.Width / 2,
+            Bounds.MaxY + 2
+        )
+
+    Data.Distance.Size =
+        UDim2.fromOffset(
+            math.max(Bounds.Width + 60, 100),
+            18
+        )
+
+    Data.Distance.Visible = true
+end
+
+--========================================
+-- UPDATE MODEL
+--========================================
+
+local function UpdateModel(Data, Character)
+    if not Settings.ModelESP then
+        Data.Highlight.Enabled = false
+        return
+    end
+
+    Data.Highlight.Adornee = Character
+    Data.Highlight.FillColor = Settings.ESPColor
+    Data.Highlight.OutlineColor = Settings.ESPColor
+    Data.Highlight.Enabled = true
 end
 
 --========================================
 -- UPDATE TRACER
 --========================================
 
-local function UpdateTracer(
-    Object,
-    Root,
-    Color
-)
-
+local function UpdateTracer(Data, Bounds)
     if not Settings.TracerESP then
-
-        Object.Tracer.Visible = false
-
+        Data.Tracer.Visible = false
         return
     end
-
-    local Camera =
-        workspace.CurrentCamera
-
-    if not Camera then
-        Object.Tracer.Visible = false
-        return
-    end
-
-    local ScreenPosition,
-        OnScreen =
-        Camera:WorldToViewportPoint(
-            Root.Position
-        )
-
-    if not OnScreen
-    or ScreenPosition.Z <= 0 then
-
-        Object.Tracer.Visible = false
-
-        return
-    end
-
-    local Viewport =
-        Camera.ViewportSize
 
     local Start =
         Vector2.new(
-            Viewport.X / 2,
-            Viewport.Y - 20
+            Camera.ViewportSize.X / 2,
+            Camera.ViewportSize.Y
         )
 
-    local Finish =
+    local Target =
         Vector2.new(
-            ScreenPosition.X,
-            ScreenPosition.Y
+            Bounds.MinX + Bounds.Width / 2,
+            Bounds.MaxY
         )
 
-    local Delta =
-        Finish - Start
+    local Delta = Target - Start
+    local Length = Delta.Magnitude
 
-    local Length =
-        Delta.Magnitude
+    if Length < 1 then
+        Data.Tracer.Visible = false
+        return
+    end
 
-    Object.Tracer.Position =
+    Data.Tracer.Position =
         UDim2.fromOffset(
-            (Start.X + Finish.X) / 2,
-            (Start.Y + Finish.Y) / 2
+            (Start.X + Target.X) / 2,
+            (Start.Y + Target.Y) / 2
         )
 
-    Object.Tracer.Size =
+    Data.Tracer.Size =
         UDim2.fromOffset(
             2,
             Length
         )
 
-    Object.Tracer.Rotation =
-        math.deg(
-            math.atan2(
-                Delta.Y,
-                Delta.X
-            )
-        ) - 90
+    Data.Tracer.Rotation =
+        math.deg(math.atan2(Delta.Y, Delta.X)) - 90
 
-    Object.Tracer.BackgroundColor3 =
-        Color
+    Data.Tracer.BackgroundColor3 =
+        Settings.ESPColor
 
-    Object.Tracer.Visible = true
+    Data.Tracer.Visible = true
 end
 
 --========================================
--- UPDATE PLAYER
+-- UPDATE ESP
 --========================================
 
-local function UpdateESP(
-    Player,
-    Object
-)
-
+local function UpdateESP(Player, Data)
     if not Settings.Enabled then
-
-        HideESP(Object)
-
+        HideESP(Data)
         return
     end
 
-    local Character,
-        Humanoid,
-        Root =
+    if not Player.Parent then
+        HideESP(Data)
+        return
+    end
+
+    if Settings.TeamCheck and not IsEnemy(Player) then
+        HideESP(Data)
+        return
+    end
+
+    local Character =
         GetCharacter(Player)
 
-    if not Character
-    or not Humanoid
-    or not Root then
-
-        HideESP(Object)
-
+    if not Character then
+        HideESP(Data)
         return
     end
 
-    if not IsEnemy(Player) then
-
-        HideESP(Object)
-
+    if not IsWithinDistance(Player) then
+        HideESP(Data)
         return
     end
 
-    if not IsWithinDistance(Root) then
-
-        HideESP(Object)
-
-        return
-    end
-
-    local Camera =
-        workspace.CurrentCamera
-
-    if not Camera then
-        HideESP(Object)
-        return
-    end
-
-    local Distance =
-        (Camera.CFrame.Position -
-            Root.Position).Magnitude
-
-    local MinX,
-        MinY,
-        MaxX,
-        MaxY =
+    local Bounds =
         GetScreenBounds(Character)
 
-    if not MinX then
-
-        HideESP(Object)
-
+    if not Bounds then
+        HideESP(Data)
         return
     end
 
-    local Color =
-        GetESPColor()
-
     --========================================
-    -- BOX
+    -- COLORS
     --========================================
 
-    UpdateBox(
-        Object,
-        MinX,
-        MinY,
-        MaxX,
-        MaxY,
-        Color
-    )
+    if Data.BoxStroke then
+        Data.BoxStroke.Color = Settings.ESPColor
+    end
+
+    for _, Corner in ipairs(Data.Corners) do
+        Corner.BackgroundColor3 =
+            Settings.ESPColor
+    end
+
+    Data.Name.TextColor3 =
+        Settings.ESPColor
+
+    Data.Highlight.FillColor =
+        Settings.ESPColor
+
+    Data.Highlight.OutlineColor =
+        Settings.ESPColor
+
+    Data.Tracer.BackgroundColor3 =
+        Settings.ESPColor
 
     --========================================
-    -- HEALTH
+    -- FEATURES
     --========================================
+
+    UpdateBox(Data, Bounds)
 
     UpdateHealth(
-        Object,
-        MinX,
-        MinY,
-        MaxY,
-        Humanoid,
-        Color
+        Data,
+        Character,
+        Bounds
     )
 
-    --========================================
-    -- NAME / DISTANCE
-    --========================================
-
-    UpdateInfo(
-        Object,
-        MinX,
-        MinY,
-        MaxX,
-        MaxY,
-        Player,
-        Distance,
-        Color
+    UpdateName(
+        Data,
+        Bounds
     )
 
-    --========================================
-    -- MODEL ESP
-    --========================================
+    UpdateDistance(
+        Data,
+        Character,
+        Bounds
+    )
 
-    if Settings.ModelESP then
-
-        Object.ModelHighlight.Adornee =
-            Character
-
-        Object.ModelHighlight.FillColor =
-            Color
-
-        Object.ModelHighlight.OutlineColor =
-            Color
-
-        Object.ModelHighlight.Enabled =
-            true
-
-    else
-
-        Object.ModelHighlight.Enabled =
-            false
-
-    end
-
-    --========================================
-    -- TRACER
-    --========================================
+    UpdateModel(
+        Data,
+        Character
+    )
 
     UpdateTracer(
-        Object,
-        Root,
-        Color
+        Data,
+        Bounds
     )
 end
 
 --========================================
--- CREATE EXISTING PLAYERS
---========================================
-
-for _, Player in ipairs(
-    Players:GetPlayers()
-) do
-
-    CreateESP(Player)
-
-end
-
---========================================
--- NEW PLAYERS
---========================================
-
-Players.PlayerAdded:Connect(
-    function(Player)
-
-        CreateESP(Player)
-
-    end
-)
-
---========================================
--- PLAYER REMOVAL
---========================================
-
-Players.PlayerRemoving:Connect(
-    function(Player)
-
-        RemoveESP(Player)
-
-    end
-)
-
---========================================
--- ESP RENDER LOOP
---========================================
-
-RunService.RenderStepped:Connect(
-    function()
-
-        for Player, Object in pairs(
-            ESPObjects
-        ) do
-
-            if Player.Parent then
-
-                UpdateESP(
-                    Player,
-                    Object
-                )
-
-            else
-
-                RemoveESP(Player)
-
-            end
-
-        end
-
-    end
-)
-
---========================================
--- ESP TOGGLE
---========================================
-
-ESPButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.Enabled =
-            not Settings.Enabled
-
-        ESPButton.Text =
-            "ESP: " ..
-            (
-                Settings.Enabled
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- BOX TOGGLE
---========================================
-
-BoxButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.BoxESP =
-            not Settings.BoxESP
-
-        BoxButton.Text =
-            "Box ESP: " ..
-            (
-                Settings.BoxESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- MODEL TOGGLE
---========================================
-
-ModelButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.ModelESP =
-            not Settings.ModelESP
-
-        ModelButton.Text =
-            "Model ESP: " ..
-            (
-                Settings.ModelESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- NAME TOGGLE
---========================================
-
-NameButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.NameESP =
-            not Settings.NameESP
-
-        NameButton.Text =
-            "Name ESP: " ..
-            (
-                Settings.NameESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- HEALTH TOGGLE
---========================================
-
-HealthButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.HealthESP =
-            not Settings.HealthESP
-
-        HealthButton.Text =
-            "Health Bar: " ..
-            (
-                Settings.HealthESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- DISTANCE TOGGLE
---========================================
-
-DistanceButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.DistanceESP =
-            not Settings.DistanceESP
-
-        DistanceButton.Text =
-            "Distance: " ..
-            (
-                Settings.DistanceESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- TRACER TOGGLE
---========================================
-
-TracerButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.TracerESP =
-            not Settings.TracerESP
-
-        TracerButton.Text =
-            "Tracers: " ..
-            (
-                Settings.TracerESP
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- TEAM CHECK
---========================================
-
-TeamButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.TeamCheck =
-            not Settings.TeamCheck
-
-        TeamButton.Text =
-            "Team Check: " ..
-            (
-                Settings.TeamCheck
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- RAINBOW
---========================================
-
-RainbowButton.MouseButton1Click:Connect(
-    function()
-
-        Settings.Rainbow =
-            not Settings.Rainbow
-
-        RainbowButton.Text =
-            "Rainbow ESP: " ..
-            (
-                Settings.Rainbow
-                and "ON"
-                or "OFF"
-            )
-
-    end
-)
-
---========================================
--- MAX DISTANCE
---========================================
-
-DistanceLimitButton.MouseButton1Click:Connect(
-    function()
-
-        local Distances = {
-            100,
-            250,
-            500,
-            1000,
-            2000
-        }
-
-        local Current =
-            table.find(
-                Distances,
-                Settings.MaxDistance
-            ) or 4
-
-        Current += 1
-
-        if Current > #Distances then
-            Current = 1
-        end
-
-        Settings.MaxDistance =
-            Distances[Current]
-
-        DistanceLimitButton.Text =
-            "Max Distance: " ..
-            Settings.MaxDistance
-
-    end
-)
-
---========================================
--- COLOR
---========================================
-
-ColorButton.MouseButton1Click:Connect(function()
-    ColorIndex = ColorIndex + 1
-
-    if ColorIndex > #ESPColors then
-        ColorIndex = 1
-    end
-
-    Settings.ESPColor = ESPColors[ColorIndex]
-    ColorButton.Text = "ESP Color: " .. ColorNames[ColorIndex]
-end)
-
---========================================
--- RAINBOW
---========================================
-
-RainbowButton.MouseButton1Click:Connect(function()
-    Settings.Rainbow = not Settings.Rainbow
-    RainbowButton.Text = "Rainbow: " .. (Settings.Rainbow and "ON" or "OFF")
-end)
-
---========================================
--- MAX DISTANCE
---========================================
-
-DistanceLimitButton.MouseButton1Click:Connect(function()
-    local distances = {
-        100,
-        250,
-        500,
-        1000,
-        2000,
-        math.huge
-    }
-
-    local current = Settings.MaxDistance
-    local nextDistance = distances[1]
-
-    for i, distance in ipairs(distances) do
-        if distance == current then
-            nextDistance = distances[i + 1] or distances[1]
-            break
-        end
-    end
-
-    Settings.MaxDistance = nextDistance
-
-    if nextDistance == math.huge then
-        DistanceLimitButton.Text = "Max Distance: Unlimited"
-    else
-        DistanceLimitButton.Text = "Max Distance: " .. tostring(nextDistance)
-    end
-end)
-
---========================================
--- TEAM CHECK
---========================================
-
-TeamButton.MouseButton1Click:Connect(function()
-    Settings.TeamCheck = not Settings.TeamCheck
-    TeamButton.Text = "Team Check: " .. (Settings.TeamCheck and "ON" or "OFF")
-end)
-
---========================================
--- TRACER
---========================================
-
-TracerButton.MouseButton1Click:Connect(function()
-    Settings.TracerESP = not Settings.TracerESP
-    TracerButton.Text = "Tracer ESP: " .. (Settings.TracerESP and "ON" or "OFF")
-end)
-
---========================================
--- SKELETON
---========================================
-
-SkeletonButton.MouseButton1Click:Connect(function()
-    Settings.SkeletonESP = not Settings.SkeletonESP
-    SkeletonButton.Text = "Skeleton ESP: " .. (Settings.SkeletonESP and "ON" or "OFF")
-end)
-
---========================================
--- HEALTH
---========================================
-
-HealthButton.MouseButton1Click:Connect(function()
-    Settings.HealthESP = not Settings.HealthESP
-    HealthButton.Text = "Health ESP: " .. (Settings.HealthESP and "ON" or "OFF")
-end)
-
---========================================
--- DISTANCE
---========================================
-
-DistanceButton.MouseButton1Click:Connect(function()
-    Settings.DistanceESP = not Settings.DistanceESP
-    DistanceButton.Text = "Distance ESP: " .. (Settings.DistanceESP and "ON" or "OFF")
-end)
-
---========================================
--- NAME
---========================================
-
-NameButton.MouseButton1Click:Connect(function()
-    Settings.NameESP = not Settings.NameESP
-    NameButton.Text = "Name ESP: " .. (Settings.NameESP and "ON" or "OFF")
-end)
-
---========================================
--- MODEL ESP
---========================================
-
-ModelButton.MouseButton1Click:Connect(function()
-    Settings.ModelESP = not Settings.ModelESP
-    ModelButton.Text = "Model ESP: " .. (Settings.ModelESP and "ON" or "OFF")
-end)
-
---========================================
--- BOX ESP
---========================================
-
-BoxButton.MouseButton1Click:Connect(function()
-    Settings.BoxESP = not Settings.BoxESP
-    BoxButton.Text = "Box ESP: " .. (Settings.BoxESP and "ON" or "OFF")
-end)
-
---========================================
--- MAIN ESP
---========================================
-
-ESPButton.MouseButton1Click:Connect(function()
-    Settings.Enabled = not Settings.Enabled
-    ESPButton.Text = "ESP: " .. (Settings.Enabled and "ON" or "OFF")
-
-    for _, Data in pairs(ESPObjects) do
-        if Data then
-            if not Settings.Enabled then
-                HideESP(Data)
-            end
-        end
-    end
-
-    for _, Data in pairs(SkeletonObjects) do
-        if Data then
-            for _, Line in pairs(Data.Lines or {}) do
-                Line.Visible = false
-            end
-        end
-    end
-
-    for _, Data in pairs(TracerObjects) do
-        if Data then
-            Data.Visible = false
-        end
-    end
-end)
-
---========================================
--- BUTTON HOVER
---========================================
-
-local function SetupHover(Button)
-    if not Button then
-        return
-    end
-
-    Button.MouseEnter:Connect(function()
-        TweenService:Create(
-            Button,
-            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {
-                BackgroundColor3 = Color3.fromRGB(55, 38, 75)
-            }
-        ):Play()
-    end)
-
-    Button.MouseLeave:Connect(function()
-        TweenService:Create(
-            Button,
-            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {
-                BackgroundColor3 = Color3.fromRGB(28, 22, 38)
-            }
-        ):Play()
-    end)
-end
-
-SetupHover(ESPButton)
-SetupHover(BoxButton)
-SetupHover(ModelButton)
-SetupHover(NameButton)
-SetupHover(HealthButton)
-SetupHover(DistanceButton)
-SetupHover(TracerButton)
-SetupHover(SkeletonButton)
-SetupHover(TeamButton)
-SetupHover(RainbowButton)
-SetupHover(DistanceLimitButton)
-SetupHover(ColorButton)
-
---========================================
--- PLAYER CONNECTIONS
---========================================
-
-Players.PlayerAdded:Connect(function(Player)
-    task.wait(0.5)
-
-    if Player ~= LocalPlayer then
-        CreateESP(Player)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(Player)
-    RemoveESP(Player)
-end)
-
---========================================
--- EXISTING PLAYERS
+-- CREATE EXISTING ESP
 --========================================
 
 for _, Player in ipairs(Players:GetPlayers()) do
@@ -2302,79 +1218,196 @@ for _, Player in ipairs(Players:GetPlayers()) do
 end
 
 --========================================
--- RAINBOW COLOR UPDATE
+-- PLAYER ADDED
 --========================================
 
-local RainbowHue = 0
+Players.PlayerAdded:Connect(function(Player)
+    if Player == LocalPlayer then
+        return
+    end
 
-RunService.RenderStepped:Connect(function(Delta)
-    if Settings.Rainbow then
-        RainbowHue = RainbowHue + Delta * 0.35
+    task.wait(0.25)
 
-        if RainbowHue >= 1 then
-            RainbowHue = 0
-        end
-
-        Settings.ESPColor = Color3.fromHSV(RainbowHue, 0.85, 1)
+    if Player.Parent then
+        CreateESP(Player)
     end
 end)
 
 --========================================
--- ESP UPDATE LOOP
+-- PLAYER REMOVING
+--========================================
+
+Players.PlayerRemoving:Connect(function(Player)
+    RemoveESP(Player)
+end)
+
+--========================================
+-- MAIN ESP LOOP
 --========================================
 
 RunService.RenderStepped:Connect(function()
     for Player, Data in pairs(ESPObjects) do
-        if Player and Player.Parent then
+        if Player.Parent then
             UpdateESP(Player, Data)
         else
             RemoveESP(Player)
         end
     end
+end)
 
-    for Player, Data in pairs(SkeletonObjects) do
-        if Player and Player.Parent then
-            if UpdateSkeleton then
-                UpdateSkeleton(Player, Data)
-            end
+--========================================
+-- ESP BUTTON
+--========================================
+
+ESPButton.MouseButton1Click:Connect(function()
+    Settings.Enabled = not Settings.Enabled
+
+    ESPButton.Text =
+        "ESP: " ..
+        (Settings.Enabled and "ON" or "OFF")
+
+    if not Settings.Enabled then
+        for _, Data in pairs(ESPObjects) do
+            HideESP(Data)
         end
     end
 end)
 
 --========================================
--- FINAL STATE
+-- BOX BUTTON
 --========================================
 
-ESPButton.Text = "ESP: " .. (Settings.Enabled and "ON" or "OFF")
-BoxButton.Text = "Box ESP: " .. (Settings.BoxESP and "ON" or "OFF")
-ModelButton.Text = "Model ESP: " .. (Settings.ModelESP and "ON" or "OFF")
-NameButton.Text = "Name ESP: " .. (Settings.NameESP and "ON" or "OFF")
-HealthButton.Text = "Health ESP: " .. (Settings.HealthESP and "ON" or "OFF")
-DistanceButton.Text = "Distance ESP: " .. (Settings.DistanceESP and "ON" or "OFF")
-TracerButton.Text = "Tracer ESP: " .. (Settings.TracerESP and "ON" or "OFF")
-SkeletonButton.Text = "Skeleton ESP: " .. (Settings.SkeletonESP and "ON" or "OFF")
-TeamButton.Text = "Team Check: " .. (Settings.TeamCheck and "ON" or "OFF")
-RainbowButton.Text = "Rainbow: " .. (Settings.Rainbow and "ON" or "OFF")
+BoxButton.MouseButton1Click:Connect(function()
+    Settings.BoxESP = not Settings.BoxESP
+
+    BoxButton.Text =
+        "Box ESP: " ..
+        (Settings.BoxESP and "ON" or "OFF")
+end)
+
+--========================================
+-- MODEL BUTTON
+--========================================
+
+ModelButton.MouseButton1Click:Connect(function()
+    Settings.ModelESP = not Settings.ModelESP
+
+    ModelButton.Text =
+        "Model ESP: " ..
+        (Settings.ModelESP and "ON" or "OFF")
+end)
+
+--========================================
+-- NAME BUTTON
+--========================================
+
+NameButton.MouseButton1Click:Connect(function()
+    Settings.NameESP = not Settings.NameESP
+
+    NameButton.Text =
+        "Name ESP: " ..
+        (Settings.NameESP and "ON" or "OFF")
+end)
+
+--========================================
+-- HEALTH BUTTON
+--========================================
+
+HealthButton.MouseButton1Click:Connect(function()
+    Settings.HealthESP = not Settings.HealthESP
+
+    HealthButton.Text =
+        "Health ESP: " ..
+        (Settings.HealthESP and "ON" or "OFF")
+end)
+
+--========================================
+-- DISTANCE BUTTON
+--========================================
+
+DistanceButton.MouseButton1Click:Connect(function()
+    Settings.DistanceESP = not Settings.DistanceESP
+
+    DistanceButton.Text =
+        "Distance ESP: " ..
+        (Settings.DistanceESP and "ON" or "OFF")
+end)
+
+--========================================
+-- TRACER BUTTON
+--========================================
+
+TracerButton.MouseButton1Click:Connect(function()
+    Settings.TracerESP = not Settings.TracerESP
+
+    TracerButton.Text =
+        "Tracer ESP: " ..
+        (Settings.TracerESP and "ON" or "OFF")
+end)
+
+--========================================
+-- SKELETON BUTTON
+--========================================
+
+SkeletonButton.MouseButton1Click:Connect(function()
+    Settings.SkeletonESP = not Settings.SkeletonESP
+
+    SkeletonButton.Text =
+        "Skeleton ESP: " ..
+        (Settings.SkeletonESP and "ON" or "OFF")
+end)
+
+--========================================
+-- TEAM CHECK BUTTON
+--========================================
+
+TeamButton.MouseButton1Click:Connect(function()
+    Settings.TeamCheck = not Settings.TeamCheck
+
+    TeamButton.Text =
+        "Team Check: " ..
+        (Settings.TeamCheck and "ON" or "OFF")
+end)
+
+--========================================
+-- RAINBOW BUTTON
+--========================================
+
+RainbowButton.MouseButton1Click:Connect(function()
+    Settings.Rainbow = not Settings.Rainbow
+
+    RainbowButton.Text =
+        "Rainbow: " ..
+        (Settings.Rainbow and "ON" or "OFF")
+end)
 
 --========================================
 -- END OF PART 2
 --========================================
 
 --========================================
--- SKELETON ESP
+-- LUNAR ESP 3.0
+-- PART 3/3
+-- SKELETON + CONTROLS + MINIMIZE
 --========================================
 
-local function FindBodyPart(Character, Names)
-    for _, Name in ipairs(Names) do
-        local Part = Character:FindFirstChild(Name)
+--========================================
+-- BODY PART FINDER
+--========================================
 
-        if Part and Part:IsA("BasePart") then
-            return Part
-        end
+local function FindBodyPart(Character, Name)
+    local Part = Character:FindFirstChild(Name)
+
+    if Part and Part:IsA("BasePart") then
+        return Part
     end
 
     return nil
 end
+
+--========================================
+-- SKELETON CONNECTIONS
+--========================================
 
 local R15Connections = {
     {"Head", "UpperTorso"},
@@ -2424,25 +1457,31 @@ local function CreateSkeleton(Player)
 
     local Data = {
         Folder = Folder,
-        Lines = {},
-        Player = Player
+        Player = Player,
+        Lines = {}
     }
 
-    SkeletonObjects[Player] = Data
+    local MaxBones = math.max(
+        #R15Connections,
+        #R6Connections
+    )
 
-    for Index = 1, 14 do
+    for Index = 1, MaxBones do
         local Line = Instance.new("Frame")
+
         Line.Name = "Bone_" .. Index
         Line.AnchorPoint = Vector2.new(0.5, 0.5)
         Line.BorderSizePixel = 0
         Line.BackgroundColor3 = Settings.ESPColor
         Line.Size = UDim2.fromOffset(2, 1)
         Line.Visible = false
-        Line.ZIndex = 8
+        Line.ZIndex = 7
         Line.Parent = Folder
 
         Data.Lines[Index] = Line
     end
+
+    SkeletonObjects[Player] = Data
 
     return Data
 end
@@ -2474,7 +1513,7 @@ local function HideSkeleton(Data)
         return
     end
 
-    for _, Line in pairs(Data.Lines) do
+    for _, Line in ipairs(Data.Lines) do
         Line.Visible = false
     end
 end
@@ -2483,12 +1522,12 @@ end
 -- DRAW BONE
 --========================================
 
-local function DrawBone(Line, PositionA, PositionB)
+local function DrawBone(Line, A, B)
     if not Line then
         return
     end
 
-    local Delta = PositionB - PositionA
+    local Delta = B - A
     local Length = Delta.Magnitude
 
     if Length < 1 then
@@ -2496,13 +1535,31 @@ local function DrawBone(Line, PositionA, PositionB)
         return
     end
 
-    local Middle = (PositionA + PositionB) / 2
-    local Angle = math.deg(math.atan2(Delta.Y, Delta.X)) - 90
+    local Middle = (A + B) / 2
 
-    Line.Position = UDim2.fromOffset(Middle.X, Middle.Y)
-    Line.Size = UDim2.fromOffset(2, Length)
-    Line.Rotation = Angle
-    Line.BackgroundColor3 = Settings.ESPColor
+    Line.Position =
+        UDim2.fromOffset(
+            Middle.X,
+            Middle.Y
+        )
+
+    Line.Size =
+        UDim2.fromOffset(
+            2,
+            Length
+        )
+
+    Line.Rotation =
+        math.deg(
+            math.atan2(
+                Delta.Y,
+                Delta.X
+            )
+        ) - 90
+
+    Line.BackgroundColor3 =
+        Settings.ESPColor
+
     Line.Visible = true
 end
 
@@ -2510,31 +1567,21 @@ end
 -- UPDATE SKELETON
 --========================================
 
-UpdateSkeleton = function(Player, Data)
+local function UpdateSkeleton(Player, Data)
     if not Data then
         return
     end
 
-    if not Settings.Enabled or not Settings.SkeletonESP then
+    if not Settings.Enabled
+        or not Settings.SkeletonESP then
+
         HideSkeleton(Data)
         return
     end
 
-    if Settings.TeamCheck and not IsEnemy(Player) then
-        HideSkeleton(Data)
-        return
-    end
+    if Settings.TeamCheck
+        and not IsEnemy(Player) then
 
-    local Character = GetCharacter(Player)
-
-    if not Character then
-        HideSkeleton(Data)
-        return
-    end
-
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-
-    if not Humanoid or Humanoid.Health <= 0 then
         HideSkeleton(Data)
         return
     end
@@ -2544,36 +1591,73 @@ UpdateSkeleton = function(Player, Data)
         return
     end
 
+    local Character =
+        GetCharacter(Player)
+
+    if not Character then
+        HideSkeleton(Data)
+        return
+    end
+
+    local Humanoid =
+        Character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        HideSkeleton(Data)
+        return
+    end
+
     local Connections
 
-    if Humanoid.RigType == Enum.HumanoidRigType.R15 then
+    if Humanoid.RigType ==
+        Enum.HumanoidRigType.R15 then
+
         Connections = R15Connections
     else
         Connections = R6Connections
     end
 
-    local Used = 0
+    for Index, Connection in ipairs(Connections) do
+        local PartA =
+            FindBodyPart(
+                Character,
+                Connection[1]
+            )
 
-    for _, Connection in ipairs(Connections) do
-        Used = Used + 1
+        local PartB =
+            FindBodyPart(
+                Character,
+                Connection[2]
+            )
 
-        local PartA = FindBodyPart(Character, {Connection[1]})
-        local PartB = FindBodyPart(Character, {Connection[2]})
-
-        local Line = Data.Lines[Used]
+        local Line =
+            Data.Lines[Index]
 
         if PartA and PartB and Line then
             local PointA, VisibleA =
-                Camera:WorldToViewportPoint(PartA.Position)
+                Camera:WorldToViewportPoint(
+                    PartA.Position
+                )
 
             local PointB, VisibleB =
-                Camera:WorldToViewportPoint(PartB.Position)
+                Camera:WorldToViewportPoint(
+                    PartB.Position
+                )
 
-            if VisibleA or VisibleB then
+            if PointA.Z > 0
+                and PointB.Z > 0
+                and (VisibleA or VisibleB) then
+
                 DrawBone(
                     Line,
-                    Vector2.new(PointA.X, PointA.Y),
-                    Vector2.new(PointB.X, PointB.Y)
+                    Vector2.new(
+                        PointA.X,
+                        PointA.Y
+                    ),
+                    Vector2.new(
+                        PointB.X,
+                        PointB.Y
+                    )
                 )
             else
                 Line.Visible = false
@@ -2583,7 +1667,7 @@ UpdateSkeleton = function(Player, Data)
         end
     end
 
-    for Index = Used + 1, #Data.Lines do
+    for Index = #Connections + 1, #Data.Lines do
         Data.Lines[Index].Visible = false
     end
 end
@@ -2599,9 +1683,13 @@ for _, Player in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(function(Player)
-    task.wait(0.5)
+    if Player == LocalPlayer then
+        return
+    end
 
-    if Player ~= LocalPlayer then
+    task.wait(0.25)
+
+    if Player.Parent then
         CreateSkeleton(Player)
     end
 end)
@@ -2611,18 +1699,127 @@ Players.PlayerRemoving:Connect(function(Player)
 end)
 
 --========================================
+-- SKELETON LOOP
+--========================================
+
+RunService.RenderStepped:Connect(function()
+    for Player, Data in pairs(SkeletonObjects) do
+        if Player.Parent then
+            UpdateSkeleton(Player, Data)
+        else
+            RemoveSkeleton(Player)
+        end
+    end
+end)
+
+--========================================
+-- MAX DISTANCE
+--========================================
+
+local DistanceOptions = {
+    100,
+    250,
+    500,
+    1000,
+    2000,
+    math.huge
+}
+
+local DistanceIndex = 4
+
+DistanceLimitButton.MouseButton1Click:Connect(function()
+    DistanceIndex = DistanceIndex + 1
+
+    if DistanceIndex > #DistanceOptions then
+        DistanceIndex = 1
+    end
+
+    Settings.MaxDistance =
+        DistanceOptions[DistanceIndex]
+
+    if Settings.MaxDistance == math.huge then
+        DistanceLimitButton.Text =
+            "Max Distance: Unlimited"
+    else
+        DistanceLimitButton.Text =
+            "Max Distance: " ..
+            tostring(Settings.MaxDistance)
+    end
+end)
+
+--========================================
+-- COLOR
+--========================================
+
+ColorButton.MouseButton1Click:Connect(function()
+    ColorIndex = ColorIndex + 1
+
+    if ColorIndex > #ESPColors then
+        ColorIndex = 1
+    end
+
+    Settings.ESPColor =
+        ESPColors[ColorIndex]
+
+    ColorButton.Text =
+        "ESP Color: " ..
+        ColorNames[ColorIndex]
+end)
+
+--========================================
+-- RAINBOW
+--========================================
+
+local RainbowHue = 0
+
+RunService.RenderStepped:Connect(function(Delta)
+    if Settings.Rainbow then
+        RainbowHue =
+            RainbowHue + Delta * 0.35
+
+        if RainbowHue >= 1 then
+            RainbowHue = 0
+        end
+
+        Settings.ESPColor =
+            Color3.fromHSV(
+                RainbowHue,
+                0.85,
+                1
+            )
+    end
+end)
+
+--========================================
 -- MINIMIZE SYSTEM
 --========================================
 
 local IsMinimized = false
-local FullSize = UDim2.fromOffset(340, 520)
-local MiniSize = UDim2.fromOffset(64, 64)
 
-local function SetVisible(Object, State)
-    if Object then
-        Object.Visible = State
-    end
+local FullSize =
+    UDim2.fromOffset(350, 540)
+
+local MiniSize =
+    UDim2.fromOffset(64, 64)
+
+--========================================
+-- RESTORE LOGO
+--========================================
+
+local function RestoreLogo()
+    LogoButton.AnchorPoint =
+        Vector2.new(0, 0)
+
+    LogoButton.Position =
+        UDim2.fromOffset(11, 11)
+
+    LogoButton.Size =
+        UDim2.fromOffset(48, 48)
 end
+
+--========================================
+-- MINIMIZE
+--========================================
 
 local function MinimizeMenu()
     if IsMinimized then
@@ -2631,11 +1828,28 @@ local function MinimizeMenu()
 
     IsMinimized = true
 
-    SetVisible(Content, false)
-    SetVisible(Title, false)
-    SetVisible(Subtitle, false)
-    SetVisible(CloseButton, false)
-    SetVisible(MinimizeButton, false)
+    Content.Visible = false
+    Title.Visible = false
+    Subtitle.Visible = false
+    CloseButton.Visible = false
+    MinimizeButton.Visible = false
+
+    TopMask.Visible = false
+
+    TopBar.Size =
+        UDim2.fromScale(1, 1)
+
+    TopBar.BackgroundColor3 =
+        Color3.fromRGB(20, 15, 28)
+
+    LogoButton.AnchorPoint =
+        Vector2.new(0.5, 0.5)
+
+    LogoButton.Position =
+        UDim2.fromScale(0.5, 0.5)
+
+    LogoButton.Size =
+        UDim2.fromOffset(50, 50)
 
     TweenService:Create(
         Main,
@@ -2648,20 +1862,11 @@ local function MinimizeMenu()
             Size = MiniSize
         }
     ):Play()
-
-    TweenService:Create(
-        LogoButton,
-        TweenInfo.new(
-            0.25,
-            Enum.EasingStyle.Back,
-            Enum.EasingDirection.Out
-        ),
-        {
-            Position = UDim2.fromScale(0.5, 0.5),
-            AnchorPoint = Vector2.new(0.5, 0.5)
-        }
-    ):Play()
 end
+
+--========================================
+-- RESTORE
+--========================================
 
 local function RestoreMenu()
     if not IsMinimized then
@@ -2682,15 +1887,26 @@ local function RestoreMenu()
         }
     ):Play()
 
-    task.delay(0.15, function()
-        SetVisible(Content, true)
-        SetVisible(Title, true)
-        SetVisible(Subtitle, true)
-        SetVisible(CloseButton, true)
-        SetVisible(MinimizeButton, true)
+    task.delay(0.18, function()
+        if not ScreenGui.Parent then
+            return
+        end
 
-        LogoButton.AnchorPoint = Vector2.new(0, 0)
-        LogoButton.Position = UDim2.fromOffset(14, 8)
+        TopBar.Size =
+            UDim2.new(1, 0, 0, 70)
+
+        TopBar.BackgroundColor3 =
+            Color3.fromRGB(23, 17, 31)
+
+        TopMask.Visible = true
+
+        RestoreLogo()
+
+        Content.Visible = true
+        Title.Visible = true
+        Subtitle.Visible = true
+        CloseButton.Visible = true
+        MinimizeButton.Visible = true
     end)
 end
 
@@ -2703,7 +1919,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
 end)
 
 --========================================
--- MINI MOON CLICK / DRAG
+-- MINI DRAG
 --========================================
 
 local MiniDragging = false
@@ -2717,8 +1933,10 @@ LogoButton.InputBegan:Connect(function(Input)
         return
     end
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseButton1
+        or Input.UserInputType ==
+        Enum.UserInputType.Touch then
 
         MiniDragging = true
         MiniMoved = false
@@ -2729,48 +1947,49 @@ LogoButton.InputBegan:Connect(function(Input)
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
-    if not MiniDragging or not IsMinimized then
+    if not MiniDragging
+        or not IsMinimized then
         return
     end
 
-    if Input.UserInputType == Enum.UserInputType.MouseMovement
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseMovement
+        or Input.UserInputType ==
+        Enum.UserInputType.Touch then
 
-        local Delta = Input.Position - MiniStart
+        local Delta =
+            Input.Position - MiniStart
 
         if Delta.Magnitude > 5 then
             MiniMoved = true
         end
 
-        Main.Position = UDim2.new(
-            MiniPosition.X.Scale,
-            MiniPosition.X.Offset + Delta.X,
-            MiniPosition.Y.Scale,
-            MiniPosition.Y.Offset + Delta.Y
-        )
+        Main.Position =
+            UDim2.new(
+                MiniPosition.X.Scale,
+                MiniPosition.X.Offset + Delta.X,
+                MiniPosition.Y.Scale,
+                MiniPosition.Y.Offset + Delta.Y
+            )
     end
 end)
 
 UserInputService.InputEnded:Connect(function(Input)
-    if Input == MiniInput
-        or Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if Input == MiniInput then
+        local Clicked =
+            not MiniMoved
 
-        if MiniDragging then
-            local WasMoved = MiniMoved
+        MiniDragging = false
+        MiniInput = nil
 
-            MiniDragging = false
-            MiniInput = nil
-
-            if not WasMoved then
-                RestoreMenu()
-            end
+        if Clicked then
+            RestoreMenu()
         end
     end
 end)
 
 --========================================
--- NORMAL MENU DRAG
+-- NORMAL DRAG
 --========================================
 
 local Dragging = false
@@ -2783,8 +2002,10 @@ TopBar.InputBegan:Connect(function(Input)
         return
     end
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseButton1
+        or Input.UserInputType ==
+        Enum.UserInputType.Touch then
 
         Dragging = true
         DragStart = Input.Position
@@ -2794,35 +2015,37 @@ TopBar.InputBegan:Connect(function(Input)
 end)
 
 TopBar.InputChanged:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseMovement
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseMovement
+        or Input.UserInputType ==
+        Enum.UserInputType.Touch then
 
         DragInput = Input
     end
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
-    if not Dragging or IsMinimized then
+    if not Dragging
+        or IsMinimized then
         return
     end
 
     if Input == DragInput then
-        local Delta = Input.Position - DragStart
+        local Delta =
+            Input.Position - DragStart
 
-        Main.Position = UDim2.new(
-            StartPosition.X.Scale,
-            StartPosition.X.Offset + Delta.X,
-            StartPosition.Y.Scale,
-            StartPosition.Y.Offset + Delta.Y
-        )
+        Main.Position =
+            UDim2.new(
+                StartPosition.X.Scale,
+                StartPosition.X.Offset + Delta.X,
+                StartPosition.Y.Scale,
+                StartPosition.Y.Offset + Delta.Y
+            )
     end
 end)
 
 UserInputService.InputEnded:Connect(function(Input)
-    if Input == DragInput
-        or Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
-
+    if Input == DragInput then
         Dragging = false
         DragInput = nil
     end
@@ -2832,92 +2055,128 @@ end)
 -- CLOSE
 --========================================
 
+local Closed = false
+
 CloseButton.MouseButton1Click:Connect(function()
+    if Closed then
+        return
+    end
+
+    Closed = true
+
     Settings.Enabled = false
 
-    for Player in pairs(ESPObjects) do
-        RemoveESP(Player)
-    end
-
-    for Player in pairs(SkeletonObjects) do
-        RemoveSkeleton(Player)
-    end
-
-    for _, Data in pairs(TracerObjects) do
-        if Data then
-            Data:Destroy()
+    for Player, Data in pairs(ESPObjects) do
+        if Data and Data.Folder then
+            Data.Folder:Destroy()
         end
+
+        ESPObjects[Player] = nil
     end
 
-    if ScreenGui then
-        ScreenGui:Destroy()
+    for Player, Data in pairs(SkeletonObjects) do
+        if Data and Data.Folder then
+            Data.Folder:Destroy()
+        end
+
+        SkeletonObjects[Player] = nil
     end
+
+    ScreenGui:Destroy()
 end)
 
 --========================================
--- LOGO EFFECT
+-- BUTTON STATE UPDATE
 --========================================
 
-LogoButton.MouseEnter:Connect(function()
-    if IsMinimized then
-        TweenService:Create(
-            LogoButton,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad),
-            {
-                BackgroundColor3 = Color3.fromRGB(65, 42, 90)
-            }
-        ):Play()
+local function UpdateButtonStates()
+    if not ScreenGui.Parent then
+        return
     end
-end)
 
-LogoButton.MouseLeave:Connect(function()
-    if IsMinimized then
-        TweenService:Create(
-            LogoButton,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad),
-            {
-                BackgroundColor3 = Color3.fromRGB(32, 22, 45)
-            }
-        ):Play()
-    end
-end)
+    ESPButton.Text =
+        "ESP: " ..
+        (Settings.Enabled and "ON" or "OFF")
+
+    BoxButton.Text =
+        "Box ESP: " ..
+        (Settings.BoxESP and "ON" or "OFF")
+
+    ModelButton.Text =
+        "Model ESP: " ..
+        (Settings.ModelESP and "ON" or "OFF")
+
+    NameButton.Text =
+        "Name ESP: " ..
+        (Settings.NameESP and "ON" or "OFF")
+
+    HealthButton.Text =
+        "Health ESP: " ..
+        (Settings.HealthESP and "ON" or "OFF")
+
+    DistanceButton.Text =
+        "Distance ESP: " ..
+        (Settings.DistanceESP and "ON" or "OFF")
+
+    TracerButton.Text =
+        "Tracer ESP: " ..
+        (Settings.TracerESP and "ON" or "OFF")
+
+    SkeletonButton.Text =
+        "Skeleton ESP: " ..
+        (Settings.SkeletonESP and "ON" or "OFF")
+
+    TeamButton.Text =
+        "Team Check: " ..
+        (Settings.TeamCheck and "ON" or "OFF")
+
+    RainbowButton.Text =
+        "Rainbow: " ..
+        (Settings.Rainbow and "ON" or "OFF")
+end
 
 --========================================
--- RAINBOW UI UPDATE
+-- FINAL RAINBOW VISUALS
 --========================================
 
 RunService.RenderStepped:Connect(function()
+    if Closed or not ScreenGui.Parent then
+        return
+    end
+
     if Settings.Rainbow then
-        local Color = Settings.ESPColor
+        MainStroke.Color =
+            Settings.ESPColor
 
-        if MainStroke then
-            MainStroke.Color = Color
-        end
+        LogoButton.TextColor3 =
+            Settings.ESPColor
 
-        if LogoButton then
-            LogoButton.TextColor3 = Color
-        end
+        Content.ScrollBarImageColor3 =
+            Settings.ESPColor
+    else
+        MainStroke.Color =
+            Settings.ESPColor
+
+        LogoButton.TextColor3 =
+            Settings.ESPColor
+
+        Content.ScrollBarImageColor3 =
+            Settings.ESPColor
     end
 end)
 
 --========================================
--- FINAL INITIALIZATION
+-- INITIAL BUTTON STATE
 --========================================
 
-task.spawn(function()
-    while ScreenGui and ScreenGui.Parent do
-        task.wait(1)
-
-        if not Settings.Enabled then
-            for _, Data in pairs(SkeletonObjects) do
-                HideSkeleton(Data)
-            end
-        end
-    end
-end)
-
-print("Lunar ESP loaded successfully")
+UpdateButtonStates()
 
 --========================================
--- END OF LUNAR ESP
+-- LOADED
+--========================================
+
+print("Lunar ESP 3.0 loaded")
+
+--========================================
+-- END OF LUNAR ESP 3.0
 --========================================
